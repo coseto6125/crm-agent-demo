@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>木棉衣櫥 客服</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 0 auto; padding: 16px; color: #1b1b1b; }
+  #log { border: 1px solid #ccc; height: 60vh; overflow-y: auto; padding: 8px; }
+  .msg { margin: 6px 0; padding: 6px 10px; border-radius: 6px; white-space: pre-wrap; }
+  .user { background: #eef2f7; text-align: right; }
+  .assistant { background: #f5f5f0; }
+  .meta { font-size: 12px; color: #666; }
+  form { display: flex; gap: 8px; margin-top: 8px; }
+  input { flex: 1; padding: 8px; }
+</style>
+</head>
+<body>
+<h1>木棉衣櫥 客服</h1>
+<div id="log"></div>
+<form id="form">
+  <input id="text" autocomplete="off" placeholder="請輸入問題">
+  <button>送出</button>
+</form>
+<script>
+const log = document.getElementById("log");
+const form = document.getElementById("form");
+const text = document.getElementById("text");
+let conversationId = sessionStorage.getItem("cid") || "";
+
+function add(role, content, meta) {
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  div.textContent = content;
+  if (meta) {
+    const m = document.createElement("div");
+    m.className = "meta";
+    m.textContent = meta;
+    div.appendChild(m);
+  }
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const message = text.value.trim();
+  if (!message) return;
+  text.value = "";
+  add("user", message);
+  const button = form.querySelector("button");
+  text.disabled = button.disabled = true;
+  try {
+    const resp = await fetch("/api/chat", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({conversation_id: conversationId, message}),
+    });
+    const data = await resp.json();
+    if (!resp.ok) return add("assistant", data.error || "發生錯誤");
+    conversationId = data.conversation_id;
+    sessionStorage.setItem("cid", conversationId);
+    add("assistant", data.reply, data.agent + " / " + data.intent);
+  } catch (err) {
+    add("assistant", "連線失敗，請稍後再試");
+  } finally {
+    text.disabled = button.disabled = false;
+    text.focus();
+  }
+});
+</script>
+</body>
+</html>

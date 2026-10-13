@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>客服後台</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 16px; color: #1b1b1b; }
+  table { border-collapse: collapse; margin-bottom: 16px; width: 100%; }
+  th, td { border: 1px solid #ccc; padding: 4px 8px; text-align: left; vertical-align: top; font-size: 13px; }
+  th { background: #f0f0eb; }
+  code { white-space: pre-wrap; word-break: break-all; }
+</style>
+</head>
+<body>
+<h1>客服後台</h1>
+<form id="login"><input id="token" type="password" placeholder="ADMIN_TOKEN" autocomplete="off"> <button>載入</button></form>
+<p id="status"></p>
+<h2>待審核申請單</h2><div id="tickets"></div>
+<h2>轉真人紀錄</h2><div id="handoffs"></div>
+<h2>對話</h2><div id="convs"></div>
+<script>
+let token = "";
+
+function el(tag, text, children) {
+  const e = document.createElement(tag);
+  if (text !== undefined) e.textContent = text;
+  (children || []).forEach((c) => e.appendChild(c));
+  return e;
+}
+
+function table(headers, rows) {
+  return el("table", undefined, [
+    el("tr", undefined, headers.map((h) => el("th", h))),
+    ...rows.map((r) => el("tr", undefined, r.map((c) => (c instanceof Node ? el("td", undefined, [c]) : el("td", String(c ?? "")))))),
+  ]);
+}
+
+async function decide(id, verb) {
+  const resp = await fetch(`/admin/tickets/${id}/${verb}`, {method: "POST", headers: {"X-Admin-Token": token}});
+  document.getElementById("status").textContent = `ticket ${id} ${verb}: HTTP ${resp.status}`;
+  load();
+}
+
+function buttons(t) {
+  if (t.status !== "pending") return "";
+  const box = el("span");
+  [["approve", "核准"], ["reject", "駁回"]].forEach(([verb, label]) => {
+    const b = el("button", label);
+    b.onclick = () => decide(t.id, verb);
+    box.appendChild(b);
+  });
+  return box;
+}
+
+function replace(id, node) {
+  document.getElementById(id).replaceChildren(node);
+}
+
+async function load() {
+  const resp = await fetch("/admin/data", {headers: {"X-Admin-Token": token}});
+  if (!resp.ok) return (document.getElementById("status").textContent = `HTTP ${resp.status}，請確認 ADMIN_TOKEN`);
+  const d = await resp.json();
+  replace("tickets", table(["id", "對話", "訂單", "動作", "原因", "類型", "嚴重度", "狀態", ""],
+    d.tickets.map((t) => [t.id, t.conversation_id, t.order_id, t.action, t.reason, t.complaint_type, t.severity, t.status, buttons(t)])));
+  replace("handoffs", table(["id", "對話", "turn", "原因"], d.handoffs.map((h) => [h.id, h.conversation_id, h.turn_id, h.reason])));
+  const wrap = el("div");
+  d.conversations.forEach((c) => {
+    wrap.appendChild(el("h3", "對話 " + c.id));
+    wrap.appendChild(table(["角色", "內容"], c.messages.map((m) => [m.role, m.content])));
+    const rows = c.turns.flatMap((t) =>
+      t.tool_calls.map((tc) => [t.id, t.agent, t.intent, tc.name, el("code", JSON.stringify(tc.args)), el("code", JSON.stringify(tc.result))]));
+    wrap.appendChild(table(["turn", "代理人", "意圖", "工具", "參數", "結果"], rows));
+  });
+  replace("convs", wrap);
+}
+document.getElementById("login").addEventListener("submit", (e) => {
+  e.preventDefault();
+  token = document.getElementById("token").value;
+  load();
+});
+</script>
+</body>
+</html>

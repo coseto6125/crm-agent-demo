@@ -1,0 +1,52 @@
+[
+ {
+  "product_id": "P01",
+  "name": "亞麻寬版襯衫",
+  "price": 1280
+ },
+ {
+  "product_id": "P02",
+  "name": "高腰直筒牛仔褲",
+  "price": 1680
+ },
+ {
+  "product_id": "P03",
+  "name": "羊毛混紡針織衫",
+  "price": 1980
+ },
+ {
+  "product_id": "P04",
+  "name": "防潑水連帽外套",
+  "price": 2680
+ },
+ {
+  "product_id": "P05",
+  "name": "棉質圓領T恤",
+  "price": 590
+ },
+ {
+  "product_id": "P06",
+  "name": "百褶中長裙",
+  "price": 1480
+ },
+ {
+  "product_id": "P07",
+  "name": "燈芯絨休閒長褲",
+  "price": 1580
+ },
+ {
+  "product_id": "P08",
+  "name": "刷毛運動帽T",
+  "price": 1380
+ },
+ {
+  "product_id": "P09",
+  "name": "純棉長袖睡衣組",
+  "price": 1180
+ },
+ {
+  "product_id": "P10",
+  "name": "帆布托特包",
+  "price": 890
+ }
+]
